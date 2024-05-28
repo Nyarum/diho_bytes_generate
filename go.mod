@@ -1,4 +1,4 @@
-module bytes_generated
+module github.com/Nyarum/diho_bytes_generate
 
 go 1.22.2
 

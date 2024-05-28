@@ -1,11 +1,12 @@
 package parse
 
 import (
-	"bytes_generated/customtypes"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"log"
+
+	"github.com/Nyarum/diho_bytes_generate/customtypes"
 
 	"github.com/elliotchance/orderedmap/v2"
 )

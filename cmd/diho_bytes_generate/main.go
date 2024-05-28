@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bytes_generated/generate"
-	"bytes_generated/parse"
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/Nyarum/diho_bytes_generate/generate"
+	"github.com/Nyarum/diho_bytes_generate/parse"
 )
 
 func main() {

@@ -1,9 +1,10 @@
 package generate
 
 import (
-	"bytes_generated/customtypes"
 	"log"
 	"strings"
+
+	"github.com/Nyarum/diho_bytes_generate/customtypes"
 
 	"github.com/dave/jennifer/jen"
 )
@@ -30,7 +31,7 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescr customtypes.Packe
 			}...)
 		case "string":
 			body = append(body, []jen.Code{
-				jen.Err().Op("=").Qual("bytes_generated/utils", "WriteStringNull").Call(jen.Id("newBuf"), jen.Id("p").Dot(field)),
+				jen.Err().Op("=").Qual("github.com/Nyarum/diho_bytes_generate/utils", "WriteStringNull").Call(jen.Id("newBuf"), jen.Id("p").Dot(field)),
 				jen.If(jen.Err().Op("!=").Nil()).Block(
 					jen.Return(jen.Nil(), jen.Err()),
 				),
@@ -39,7 +40,7 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescr customtypes.Packe
 	}
 
 	body = append(body, jen.Return(
-		jen.Qual("bytes_generated/utils", "Clone").Call(jen.Id("newBuf")),
+		jen.Qual("github.com/Nyarum/diho_bytes_generate/utils", "Clone").Call(jen.Id("newBuf")),
 		jen.Nil(),
 	))
 
