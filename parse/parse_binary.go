@@ -5,6 +5,7 @@ import (
 	"go/parser"
 	"go/token"
 	"log"
+	"strings"
 
 	"github.com/Nyarum/diho_bytes_generate/customtypes"
 
@@ -40,6 +41,10 @@ func ParseBinaryFile(filename string) customtypes.PacketDescr {
 				packetDescr.StructName = typeSpec.Name.Name
 
 				for _, field := range v.Fields.List {
+					if field.Tag != nil && strings.Contains(field.Tag.Value, "ignore") {
+						continue
+					}
+
 					packetDescr.FieldsWithTypes.Set(field.Names[0].Name, field.Type.(*ast.Ident).Name)
 				}
 			}

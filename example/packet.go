@@ -1,7 +1,11 @@
 package example
 
+type Header struct {
+}
+
 //go:generate diho_bytes_generate packet.go example
 type Packet struct {
+	Header `dbg:"ignore"`
 	ID     uint16
 	Name   string
 	Level  uint32

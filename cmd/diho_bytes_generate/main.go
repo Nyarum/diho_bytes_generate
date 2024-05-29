@@ -18,6 +18,7 @@ func main() {
 
 	packetDescr := parse.ParseBinaryFile(filename)
 	generate.GenerateEncodeForStruct(filename, packageName, packetDescr)
+	generate.GenerateDecodeForStruct(filename, packageName, packetDescr)
 
 	fmt.Println(packetDescr)
 }

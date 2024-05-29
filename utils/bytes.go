@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/binary"
+	"io"
 
 	"github.com/valyala/bytebufferpool"
 )
@@ -23,6 +24,22 @@ func WriteStringNull(buf *bytebufferpool.ByteBuffer, str string) error {
 	}
 
 	return nil
+}
+
+func ReadStringNull(reader io.Reader) (string, error) {
+	var ln uint16
+	err := binary.Read(reader, binary.LittleEndian, ln)
+	if err != nil {
+		return "", err
+	}
+
+	buf := make([]byte, ln)
+	_, err = reader.Read(buf)
+	if err != nil {
+		return "", err
+	}
+
+	return string(buf[:ln-1]), nil
 }
 
 func Clone(buf *bytebufferpool.ByteBuffer) []byte {
