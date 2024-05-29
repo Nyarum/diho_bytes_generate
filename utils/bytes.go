@@ -42,7 +42,7 @@ func WriteBytes(buf *bytebufferpool.ByteBuffer, data []byte) error {
 
 func ReadStringNull(reader io.Reader) (string, error) {
 	var ln uint16
-	err := binary.Read(reader, binary.LittleEndian, ln)
+	err := binary.Read(reader, binary.LittleEndian, &ln)
 	if err != nil {
 		return "", err
 	}
@@ -58,7 +58,7 @@ func ReadStringNull(reader io.Reader) (string, error) {
 
 func ReadBytes(reader io.Reader) ([]byte, error) {
 	var ln uint16
-	err := binary.Read(reader, binary.LittleEndian, ln)
+	err := binary.Read(reader, binary.LittleEndian, &ln)
 	if err != nil {
 		return nil, err
 	}
