@@ -22,7 +22,7 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescr customtypes.Packe
 		fieldType, _ := packetDescr.FieldsWithTypes.Get(field)
 
 		switch fieldType {
-		case "uint16":
+		case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8":
 			body = append(body, []jen.Code{
 				jen.Err().Op("=").Qual("encoding/binary", "Write").Call(jen.Id("newBuf"), jen.Id("endian"), jen.Id("p").Dot(field)),
 				jen.If(jen.Err().Op("!=").Nil()).Block(
@@ -52,7 +52,7 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescr customtypes.Packe
 		jen.Index().Byte(), jen.Error(),
 	).Block(body...)
 
-	outputFilename := strings.TrimSuffix(filename, ".go") + "_encode.go"
+	outputFilename := strings.TrimSuffix(filename, ".go") + "_encode.gen.go"
 	if err := f.Save(outputFilename); err != nil {
 		log.Fatalf("Failed to save file: %s", err)
 	}
