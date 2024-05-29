@@ -28,6 +28,13 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescr customtypes.Packe
 					jen.Return(jen.Err()),
 				),
 			}...)
+		case "[]byte":
+			body = append(body, []jen.Code{
+				jen.Id("p").Dot(field).Op(",").Id("err").Op("=").Qual("github.com/Nyarum/diho_bytes_generate/utils", "ReadBytes").Call(jen.Id("reader")),
+				jen.If(jen.Err().Op("!=").Nil()).Block(
+					jen.Return(jen.Err()),
+				),
+			}...)
 		case "string":
 			body = append(body, []jen.Code{
 				jen.Id("p").Dot(field).Op(",").Id("err").Op("=").Qual("github.com/Nyarum/diho_bytes_generate/utils", "ReadStringNull").Call(jen.Id("reader")),

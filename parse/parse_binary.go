@@ -45,7 +45,17 @@ func ParseBinaryFile(filename string) customtypes.PacketDescr {
 						continue
 					}
 
-					packetDescr.FieldsWithTypes.Set(field.Names[0].Name, field.Type.(*ast.Ident).Name)
+					if v, ok := field.Type.(*ast.Ident); ok {
+						packetDescr.FieldsWithTypes.Set(field.Names[0].Name, v.Name)
+					}
+
+					if v, ok := field.Type.(*ast.ArrayType); ok {
+						if v, ok := v.Elt.(*ast.Ident); ok {
+							if v.Name == "byte" {
+								packetDescr.FieldsWithTypes.Set(field.Names[0].Name, "[]byte")
+							}
+						}
+					}
 				}
 			}
 		}
