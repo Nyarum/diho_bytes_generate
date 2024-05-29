@@ -8,7 +8,7 @@ import (
 )
 
 func WriteStringNull(buf *bytebufferpool.ByteBuffer, str string) error {
-	err := binary.Write(buf, binary.LittleEndian, uint16(len(str))+1)
+	err := binary.Write(buf, binary.BigEndian, uint16(len(str))+1)
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func WriteStringNull(buf *bytebufferpool.ByteBuffer, str string) error {
 }
 
 func WriteBytes(buf *bytebufferpool.ByteBuffer, data []byte) error {
-	err := binary.Write(buf, binary.LittleEndian, uint16(len(data))+1)
+	err := binary.Write(buf, binary.BigEndian, uint16(len(data)))
 	if err != nil {
 		return err
 	}
