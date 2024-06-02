@@ -319,5 +319,3 @@ func (p *Packet) Encode(ctx context.Context, endian binary.ByteOrder) ([]byte, e
 	return utils.Clone(newBuf), nil
 }
 ```
-
-This `Encode` method writes the struct fields into a byte buffer using the specified endianness and returns the encoded byte slice.
