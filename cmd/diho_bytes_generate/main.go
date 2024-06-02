@@ -10,15 +10,15 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 3 {
+	if len(os.Args) != 2 {
 		log.Fatalf("Usage: %s <filename>", os.Args[0])
 	}
+	fmt.Println(os.Args)
 	filename := os.Args[1]
-	packageName := os.Args[2]
 
-	packetDescr := parse.ParseBinaryFile(filename)
-	generate.GenerateEncodeForStruct(filename, packageName, packetDescr)
-	generate.GenerateDecodeForStruct(filename, packageName, packetDescr)
+	pkgName, packetDescrs := parse.ParseBinaryFile(filename)
+	generate.GenerateEncodeForStruct(filename, pkgName, packetDescrs)
+	generate.GenerateDecodeForStruct(filename, pkgName, packetDescrs)
 
-	fmt.Println(packetDescr)
+	fmt.Println(packetDescrs)
 }
