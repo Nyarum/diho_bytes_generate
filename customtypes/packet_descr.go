@@ -11,4 +11,5 @@ type PacketDescr struct {
 	PackageName     string
 	StructName      string
 	FieldsWithTypes *orderedmap.OrderedMap[string, Field]
+	IsFilterMethod  bool
 }

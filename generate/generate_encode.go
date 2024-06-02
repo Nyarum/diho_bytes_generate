@@ -1,7 +1,6 @@
 package generate
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
@@ -43,7 +42,7 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 					}...)
 				default:
 					body = append(body, []jen.Code{
-						jen.If(jen.List(jen.Id("encodeBuf"), jen.Err()).Op(":=").Id("p").Dot(field).Dot("Encode").Call(jen.Id("endian")),
+						jen.If(jen.List(jen.Id("encodeBuf"), jen.Err()).Op(":=").Id("p").Dot(field).Dot("Encode").Call(jen.Id("ctx"), jen.Id("endian")),
 							jen.Err().Op("!=").Nil()).Block(
 							jen.Return(jen.Nil(), jen.Err()),
 						).Else().Block(
@@ -52,7 +51,6 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 					}...)
 				}
 			} else {
-				fmt.Println(fieldInfo.TypeName)
 
 				switch fieldInfo.TypeName {
 				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8":
@@ -74,7 +72,7 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 				default:
 					body = append(body, []jen.Code{
 						jen.For(jen.List(jen.Id("_"), jen.Id("v")).Op(":=").Range().Id("p").Dot(field)).Block(
-							jen.If(jen.List(jen.Id("encodeBuf"), jen.Err()).Op(":=").Id("v").Dot("Encode").Call(jen.Id("endian")),
+							jen.If(jen.List(jen.Id("encodeBuf"), jen.Err()).Op(":=").Id("v").Dot("Encode").Call(jen.Id("ctx"), jen.Id("endian")),
 								jen.Err().Op("!=").Nil()).Block(
 								jen.Return(jen.Nil(), jen.Err()),
 							).Else().Block(
@@ -84,6 +82,17 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 					}...)
 				}
 			}
+
+			if packetDescr.IsFilterMethod {
+				body = append(body, []jen.Code{
+					jen.If(jen.Id("p").Dot("Filter").Call(jen.Id("ctx"))).Op("==").Id("true").Block(
+						jen.Return(
+							jen.Qual("github.com/Nyarum/diho_bytes_generate/utils", "Clone").Call(jen.Id("newBuf")),
+							jen.Nil(),
+						),
+					),
+				}...)
+			}
 		}
 
 		body = append(body, jen.Return(
@@ -92,6 +101,7 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 		))
 
 		f.Func().Params(jen.Id("p").Op("*").Id(packetDescr.StructName)).Id("Encode").Params(
+			jen.Id("ctx").Qual("context", "Context"),
 			jen.Id("endian").Qual("encoding/binary", "ByteOrder"),
 		).Params(
 			jen.Index().Byte(), jen.Error(),

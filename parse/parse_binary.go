@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -8,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/Nyarum/diho_bytes_generate/customtypes"
-	"github.com/davecgh/go-spew/spew"
 
 	"github.com/elliotchance/orderedmap/v2"
 )
@@ -34,11 +34,36 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 
 	packetsDescrs = make([]customtypes.PacketDescr, 0)
 
+	fmt.Println(node)
+
+	filterMethodsByPacket := make(map[string]bool)
+
+	ast.Inspect(node, func(n ast.Node) bool {
+		if fn, ok := n.(*ast.FuncDecl); ok {
+			if fn.Recv != nil && len(fn.Recv.List) > 0 {
+				// Check if the receiver is *Packet
+				if starExpr, ok := fn.Recv.List[0].Type.(*ast.StarExpr); ok {
+					if ident, ok := starExpr.X.(*ast.Ident); ok {
+						// Check if the function name is Filter
+						if fn.Name.Name == "Filter" {
+							filterMethodsByPacket[ident.Name] = true
+
+							fmt.Printf("Found method: %s\n", fn.Name.Name)
+						}
+					}
+				}
+			}
+		}
+
+		return true
+	})
+
 	for _, decl := range node.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
 		if !ok || genDecl.Tok != token.TYPE {
 			continue
 		}
+
 		for _, spec := range genDecl.Specs {
 			typeSpec, ok := spec.(*ast.TypeSpec)
 			if !ok {
@@ -52,12 +77,14 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 
 			packetDescr.StructName = typeSpec.Name.Name
 
+			if v, ok := filterMethodsByPacket[packetDescr.StructName]; ok && v {
+				packetDescr.IsFilterMethod = true
+			}
+
 			if v := typeSpec.Type.(*ast.StructType); v != nil {
 				packetDescr.StructName = typeSpec.Name.Name
 
 				for _, field := range v.Fields.List {
-					spew.Dump(field)
-
 					if field.Tag != nil && strings.Contains(field.Tag.Value, "ignore") {
 						continue
 					}

@@ -1,5 +1,7 @@
 package example
 
+import "context"
+
 type Header struct {
 	Pass uint8
 }
@@ -25,4 +27,8 @@ type Packet struct {
 	ArrayTest       [5]uint16
 	SliceTest       []uint16
 	InternalStructs [2]InternalStruct
+}
+
+func (p *Packet) Filter(ctx context.Context) bool {
+	return false
 }
