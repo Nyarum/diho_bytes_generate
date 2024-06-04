@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Nyarum/diho_bytes_generate/customtypes"
+	"github.com/fatih/structtag"
 
 	"github.com/elliotchance/orderedmap/v2"
 )
@@ -34,8 +35,6 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 
 	packetsDescrs = make([]customtypes.PacketDescr, 0)
 
-	fmt.Println(node)
-
 	filterMethodsByPacket := make(map[string]bool)
 
 	ast.Inspect(node, func(n ast.Node) bool {
@@ -47,8 +46,6 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 						// Check if the function name is Filter
 						if fn.Name.Name == "Filter" {
 							filterMethodsByPacket[ident.Name] = true
-
-							fmt.Printf("Found method: %s\n", fn.Name.Name)
 						}
 					}
 				}
@@ -84,7 +81,33 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 			if v := typeSpec.Type.(*ast.StructType); v != nil {
 				packetDescr.StructName = typeSpec.Name.Name
 
+			outerFor:
 				for _, field := range v.Fields.List {
+					var isLittle bool
+					if field.Tag != nil {
+						fmt.Println(field.Tag.Value)
+
+						tags, err := structtag.Parse(field.Tag.Value)
+						if err != nil {
+							fmt.Println("can't parse field tag", err)
+						}
+
+						dbgTag, err := tags.Get("dbg")
+						if err != nil {
+							fmt.Println("can't get dbg tag", err)
+						}
+
+						for _, option := range dbgTag.Options {
+							if option == "ignore" {
+								continue outerFor
+							}
+
+							if option == "little" {
+								isLittle = true
+							}
+						}
+					}
+
 					if field.Tag != nil && strings.Contains(field.Tag.Value, "ignore") {
 						continue
 					}
@@ -92,6 +115,7 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 					if v, ok := field.Type.(*ast.Ident); ok {
 						packetDescr.FieldsWithTypes.Set(field.Names[0].Name, customtypes.Field{
 							TypeName: v.Name,
+							IsLittle: isLittle,
 						})
 					}
 
@@ -100,6 +124,7 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 							packetDescr.FieldsWithTypes.Set(field.Names[0].Name, customtypes.Field{
 								IsArray:  true,
 								TypeName: v.Name,
+								IsLittle: isLittle,
 							})
 						}
 					}

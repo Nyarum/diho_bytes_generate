@@ -25,7 +25,7 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 
 			if !fieldInfo.IsArray {
 				switch fieldInfo.TypeName {
-				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8":
+				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8", "bool":
 					body = append(body, []jen.Code{
 						jen.Err().Op("=").Qual("encoding/binary", "Read").Call(jen.Id("reader"), jen.Id("endian"), jen.Op("&").Id("p").Dot(field)),
 						jen.If(jen.Err().Op("!=").Nil()).Block(
@@ -40,8 +40,13 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 						),
 					}...)
 				default:
+					endianSwitch := jen.Id("endian")
+					if fieldInfo.IsLittle {
+						endianSwitch = jen.Qual("encoding/binary", "LittleEndian")
+					}
+
 					body = append(body, []jen.Code{
-						jen.If(jen.Err().Op("=").Parens(jen.Id("&").Id("p").Dot(field)).Dot("Decode").Call(jen.Id("ctx"), jen.Id("buf"), jen.Id("endian")),
+						jen.If(jen.Err().Op("=").Parens(jen.Id("&").Id("p").Dot(field)).Dot("Decode").Call(jen.Id("ctx"), jen.Id("buf"), endianSwitch),
 							jen.Err().Op("!=").Nil()).Block(
 							jen.Return(jen.Err()),
 						),
@@ -49,7 +54,7 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 				}
 			} else {
 				switch fieldInfo.TypeName {
-				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8":
+				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8", "bool":
 					body = append(body, []jen.Code{
 						jen.For(jen.Id("k").Op(":=").Range().Id("p").Dot(field)).Block(
 							jen.Var().Id("tempValue").Id(fieldInfo.TypeName),

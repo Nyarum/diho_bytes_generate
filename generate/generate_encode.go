@@ -26,7 +26,7 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 
 			if !fieldInfo.IsArray {
 				switch fieldInfo.TypeName {
-				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8":
+				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8", "bool":
 					body = append(body, []jen.Code{
 						jen.Err().Op("=").Qual("encoding/binary", "Write").Call(jen.Id("newBuf"), jen.Id("endian"), jen.Id("p").Dot(field)),
 						jen.If(jen.Err().Op("!=").Nil()).Block(
@@ -53,7 +53,7 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 			} else {
 
 				switch fieldInfo.TypeName {
-				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8":
+				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8", "bool":
 					body = append(body, []jen.Code{
 						jen.For(jen.List(jen.Id("_"), jen.Id("v")).Op(":=").Range().Id("p").Dot(field)).Block(
 							jen.If(jen.Err().Op("=").Qual("encoding/binary", "Write").Call(jen.Id("newBuf"), jen.Id("endian"), jen.Id("v")),

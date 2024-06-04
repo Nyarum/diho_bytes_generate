@@ -5,6 +5,7 @@ import "github.com/elliotchance/orderedmap/v2"
 type Field struct {
 	IsArray  bool
 	TypeName string
+	IsLittle bool
 }
 
 type PacketDescr struct {
