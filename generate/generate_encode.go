@@ -41,8 +41,13 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 						),
 					}...)
 				default:
+					endianSwitch := jen.Id("endian")
+					if fieldInfo.IsLittle {
+						endianSwitch = jen.Qual("encoding/binary", "LittleEndian")
+					}
+
 					body = append(body, []jen.Code{
-						jen.If(jen.List(jen.Id("encodeBuf"), jen.Err()).Op(":=").Id("p").Dot(field).Dot("Encode").Call(jen.Id("ctx"), jen.Id("endian")),
+						jen.If(jen.List(jen.Id("encodeBuf"), jen.Err()).Op(":=").Id("p").Dot(field).Dot("Encode").Call(jen.Id("ctx"), endianSwitch),
 							jen.Err().Op("!=").Nil()).Block(
 							jen.Return(jen.Nil(), jen.Err()),
 						).Else().Block(

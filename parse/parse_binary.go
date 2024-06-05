@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/Nyarum/diho_bytes_generate/customtypes"
-	"github.com/fatih/structtag"
+	"github.com/Nyarum/diho_bytes_generate/utils"
 
 	"github.com/elliotchance/orderedmap/v2"
 )
@@ -87,23 +87,26 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 					if field.Tag != nil {
 						fmt.Println(field.Tag.Value)
 
-						tags, err := structtag.Parse(field.Tag.Value)
+						tags := utils.ParseStructTag(field.Tag.Value)
 						if err != nil {
 							fmt.Println("can't parse field tag", err)
 						}
 
-						dbgTag, err := tags.Get("dbg")
-						if err != nil {
-							fmt.Println("can't get dbg tag", err)
-						}
+						fmt.Println("tags", tags)
 
-						for _, option := range dbgTag.Options {
-							if option == "ignore" {
-								continue outerFor
+						for tag, options := range tags {
+							if tag != "dbg" {
+								continue
 							}
 
-							if option == "little" {
-								isLittle = true
+							for _, option := range options {
+								if option == "ignore" {
+									continue outerFor
+								}
+
+								if option == "little" {
+									isLittle = true
+								}
 							}
 						}
 					}

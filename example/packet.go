@@ -12,7 +12,7 @@ type InternalStruct struct {
 
 //go:generate diho_bytes_generate packet.go
 type Packet struct {
-	Header          `dbg:"ignore"`
+	Header          `dbg:"ignore,little"`
 	ID              uint16
 	Name            string
 	Level           uint32
@@ -23,7 +23,7 @@ type Packet struct {
 	Bro3            int32
 	Bro4            int64
 	BytesField      []byte
-	InternalStruct  InternalStruct
+	InternalStruct  InternalStruct `dbg:"little"`
 	ArrayTest       [5]uint16
 	SliceTest       []uint16
 	InternalStructs [2]InternalStruct
