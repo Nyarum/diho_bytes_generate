@@ -17,7 +17,6 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 	for _, packetDescr := range packetDescrs {
 		body := []jen.Code{
 			jen.Var().Id("err").Error(),
-			jen.Id("reader").Op(":=").Qual("bytes", "NewReader").Call(jen.Id("buf")),
 		}
 
 		for _, field := range packetDescr.FieldsWithTypes.Keys() {
@@ -46,7 +45,7 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 					}
 
 					body = append(body, []jen.Code{
-						jen.If(jen.Err().Op("=").Parens(jen.Id("&").Id("p").Dot(field)).Dot("Decode").Call(jen.Id("ctx"), jen.Id("buf"), endianSwitch),
+						jen.If(jen.Err().Op("=").Parens(jen.Id("&").Id("p").Dot(field)).Dot("Decode").Call(jen.Id("ctx"), jen.Id("reader"), endianSwitch),
 							jen.Err().Op("!=").Nil()).Block(
 							jen.Return(jen.Err()),
 						),
@@ -75,7 +74,7 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 				default:
 					body = append(body, []jen.Code{
 						jen.For(jen.Id("k").Op(":=").Range().Id("p").Dot(field)).Block(
-							jen.If(jen.Err().Op("=").Parens(jen.Op("&").Id("p").Dot(field).Index(jen.Id("k"))).Dot("Decode").Call(jen.Id("ctx"), jen.Id("buf"), jen.Id("endian")),
+							jen.If(jen.Err().Op("=").Parens(jen.Op("&").Id("p").Dot(field).Index(jen.Id("k"))).Dot("Decode").Call(jen.Id("ctx"), jen.Id("reader"), jen.Id("endian")),
 								jen.Err().Op("!=").Nil()).Block(
 								jen.Return(jen.Err()),
 							),
@@ -101,7 +100,8 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 
 		f.Func().Params(jen.Id("p").Op("*").Id(packetDescr.StructName)).Id("Decode").Params(
 			jen.Id("ctx").Qual("context", "Context"),
-			jen.Id("buf").Index().Byte(), jen.Id("endian").Qual("encoding/binary", "ByteOrder"),
+			jen.Id("reader").Qual("io", "Reader"),
+			jen.Id("endian").Qual("encoding/binary", "ByteOrder"),
 		).Params(
 			jen.Error(),
 		).Block(body...)
