@@ -84,6 +84,11 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 			outerFor:
 				for _, field := range v.Fields.List {
 					var isLittle bool
+
+					fieldCompose := customtypes.Field{
+						CompositeIf: make(map[string]string),
+					}
+
 					if field.Tag != nil {
 						tags := utils.ParseStructTag(field.Tag.Value)
 						if err != nil {
@@ -103,28 +108,32 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 								if option == "little" {
 									isLittle = true
 								}
+
+								if strings.Contains(option, "=") {
+									optionParts := strings.Split(option, "=")
+									fieldName := optionParts[0]
+									fieldValue := optionParts[1]
+
+									fieldCompose.CompositeIf[fieldName] = fieldValue
+								}
 							}
 						}
 					}
 
-					if field.Tag != nil && strings.Contains(field.Tag.Value, "ignore") {
-						continue
-					}
-
 					if v, ok := field.Type.(*ast.Ident); ok {
-						packetDescr.FieldsWithTypes.Set(field.Names[0].Name, customtypes.Field{
-							TypeName: v.Name,
-							IsLittle: isLittle,
-						})
+						fieldCompose.TypeName = v.Name
+						fieldCompose.IsLittle = isLittle
+
+						packetDescr.FieldsWithTypes.Set(field.Names[0].Name, fieldCompose)
 					}
 
 					if v, ok := field.Type.(*ast.ArrayType); ok {
 						if v, ok := v.Elt.(*ast.Ident); ok {
-							packetDescr.FieldsWithTypes.Set(field.Names[0].Name, customtypes.Field{
-								IsArray:  true,
-								TypeName: v.Name,
-								IsLittle: isLittle,
-							})
+							fieldCompose.IsArray = true
+							fieldCompose.TypeName = v.Name
+							fieldCompose.IsLittle = isLittle
+
+							packetDescr.FieldsWithTypes.Set(field.Names[0].Name, fieldCompose)
 						}
 					}
 				}
