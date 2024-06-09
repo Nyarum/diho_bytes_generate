@@ -1,7 +1,6 @@
 package generate
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
@@ -24,7 +23,9 @@ func isTypesHasDefaultTypes(packetDescr customtypes.PacketDescr, keys []string) 
 	return isOK
 }
 
-func generateEncodeField(body []jen.Code, field string, fieldInfo customtypes.Field) []jen.Code {
+func generateEncodeField(field string, fieldInfo customtypes.Field) []jen.Code {
+	var body []jen.Code
+
 	if !fieldInfo.IsArray {
 		switch fieldInfo.TypeName {
 		case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8", "bool":
@@ -110,28 +111,26 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 			fieldInfo, _ := packetDescr.FieldsWithTypes.Get(field)
 
 			if len(fieldInfo.CompositeIf) > 0 {
+				var ifJen = &jen.Statement{}
+				var i = 0
 				for fieldName, fieldValue := range fieldInfo.CompositeIf {
-					fmt.Println("test")
-
-					fmt.Println("body append 2", len(body))
-
-					bodyAppend := generateEncodeField(body, fieldName, fieldInfo)
-
-					fmt.Println("body append", len(body))
-
-					body = append(body, []jen.Code{
-						jen.If(jen.Id("p").Dot(fieldName).Op("==").Id(fieldValue)).Id("{"),
-					}...)
-
-					body = append(body, bodyAppend...)
-
-					body = append(body, jen.Id("}"))
+					if i > 0 {
+						ifJen = ifJen.Op("&&")
+						ifJen.Id("p").Dot(fieldName).Op("==").Id(fieldValue)
+					} else {
+						ifJen.If(jen.Id("p").Dot(fieldName).Op("==").Id(fieldValue))
+					}
+					i++
 				}
-			} else {
-				body = generateEncodeField(body, field, fieldInfo)
-			}
 
-			fmt.Println("test 2")
+				body = append(body, []jen.Code{
+					ifJen.Block(
+						generateEncodeField(field, fieldInfo)...,
+					),
+				}...)
+			} else {
+				body = append(body, generateEncodeField(field, fieldInfo)...)
+			}
 
 			if packetDescr.IsFilterMethod {
 				body = append(body, []jen.Code{
@@ -162,6 +161,4 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 	if err := f.Save(outputFilename); err != nil {
 		log.Fatalf("Failed to save file: %s", err)
 	}
-
-	fmt.Println("finish")
 }

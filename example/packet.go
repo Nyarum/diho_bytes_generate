@@ -27,7 +27,7 @@ type Packet struct {
 	ArrayTest               [5]uint16
 	SliceTest               []uint16
 	InternalStructs         [2]InternalStruct
-	IsIncludeByAnotherField uint32 `dbg:"Bro4=0"`
+	IsIncludeByAnotherField uint32 `dbg:"Bro4=0,Bro3=1"`
 }
 
 func (p *Packet) Filter(ctx context.Context) bool {

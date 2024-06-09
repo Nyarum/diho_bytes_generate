@@ -9,6 +9,73 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
+func generateDecodeField(field string, fieldInfo customtypes.Field) []jen.Code {
+	var body []jen.Code
+
+	if !fieldInfo.IsArray {
+		switch fieldInfo.TypeName {
+		case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8", "bool":
+			body = append(body, []jen.Code{
+				jen.Err().Op("=").Qual("encoding/binary", "Read").Call(jen.Id("reader"), jen.Id("endian"), jen.Op("&").Id("p").Dot(field)),
+				jen.If(jen.Err().Op("!=").Nil()).Block(
+					jen.Return(jen.Err()),
+				),
+			}...)
+		case "string":
+			body = append(body, []jen.Code{
+				jen.Id("p").Dot(field).Op(",").Id("err").Op("=").Qual("github.com/Nyarum/diho_bytes_generate/utils", "ReadStringNull").Call(jen.Id("reader")),
+				jen.If(jen.Err().Op("!=").Nil()).Block(
+					jen.Return(jen.Err()),
+				),
+			}...)
+		default:
+			endianSwitch := jen.Id("endian")
+			if fieldInfo.IsLittle {
+				endianSwitch = jen.Qual("encoding/binary", "LittleEndian")
+			}
+
+			body = append(body, []jen.Code{
+				jen.If(jen.Err().Op("=").Parens(jen.Id("&").Id("p").Dot(field)).Dot("Decode").Call(jen.Id("ctx"), jen.Id("reader"), endianSwitch),
+					jen.Err().Op("!=").Nil()).Block(
+					jen.Return(jen.Err()),
+				),
+			}...)
+		}
+	} else {
+		switch fieldInfo.TypeName {
+		case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8", "bool":
+			body = append(body, []jen.Code{
+				jen.For(jen.Id("k").Op(":=").Range().Id("p").Dot(field)).Block(
+					jen.Var().Id("tempValue").Id(fieldInfo.TypeName),
+					jen.If(jen.Err().Op("=").Qual("encoding/binary", "Read").Call(jen.Id("reader"), jen.Id("endian"), jen.Op("&").Id("tempValue")),
+						jen.Err().Op("!=").Nil()).Block(
+						jen.Return(jen.Err()),
+					),
+					jen.Id("p").Dot(field).Index(jen.Id("k")).Op("=").Id("tempValue"),
+				),
+			}...)
+		case "byte":
+			body = append(body, []jen.Code{
+				jen.Id("p").Dot(field).Op(",").Id("err").Op("=").Qual("github.com/Nyarum/diho_bytes_generate/utils", "ReadBytes").Call(jen.Id("reader")),
+				jen.If(jen.Err().Op("!=").Nil()).Block(
+					jen.Return(jen.Err()),
+				),
+			}...)
+		default:
+			body = append(body, []jen.Code{
+				jen.For(jen.Id("k").Op(":=").Range().Id("p").Dot(field)).Block(
+					jen.If(jen.Err().Op("=").Parens(jen.Op("&").Id("p").Dot(field).Index(jen.Id("k"))).Dot("Decode").Call(jen.Id("ctx"), jen.Id("reader"), jen.Id("endian")),
+						jen.Err().Op("!=").Nil()).Block(
+						jen.Return(jen.Err()),
+					),
+				),
+			}...)
+		}
+	}
+
+	return body
+}
+
 func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.PacketDescr) {
 	f := jen.NewFilePathName("", pkg)
 
@@ -22,65 +89,26 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 		for _, field := range packetDescr.FieldsWithTypes.Keys() {
 			fieldInfo, _ := packetDescr.FieldsWithTypes.Get(field)
 
-			if !fieldInfo.IsArray {
-				switch fieldInfo.TypeName {
-				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8", "bool":
-					body = append(body, []jen.Code{
-						jen.Err().Op("=").Qual("encoding/binary", "Read").Call(jen.Id("reader"), jen.Id("endian"), jen.Op("&").Id("p").Dot(field)),
-						jen.If(jen.Err().Op("!=").Nil()).Block(
-							jen.Return(jen.Err()),
-						),
-					}...)
-				case "string":
-					body = append(body, []jen.Code{
-						jen.Id("p").Dot(field).Op(",").Id("err").Op("=").Qual("github.com/Nyarum/diho_bytes_generate/utils", "ReadStringNull").Call(jen.Id("reader")),
-						jen.If(jen.Err().Op("!=").Nil()).Block(
-							jen.Return(jen.Err()),
-						),
-					}...)
-				default:
-					endianSwitch := jen.Id("endian")
-					if fieldInfo.IsLittle {
-						endianSwitch = jen.Qual("encoding/binary", "LittleEndian")
+			if len(fieldInfo.CompositeIf) > 0 {
+				var ifJen = &jen.Statement{}
+				var i = 0
+				for fieldName, fieldValue := range fieldInfo.CompositeIf {
+					if i > 0 {
+						ifJen = ifJen.Op("&&")
+						ifJen.Id("p").Dot(fieldName).Op("==").Id(fieldValue)
+					} else {
+						ifJen.If(jen.Id("p").Dot(fieldName).Op("==").Id(fieldValue))
 					}
+					i++
+				}
 
-					body = append(body, []jen.Code{
-						jen.If(jen.Err().Op("=").Parens(jen.Id("&").Id("p").Dot(field)).Dot("Decode").Call(jen.Id("ctx"), jen.Id("reader"), endianSwitch),
-							jen.Err().Op("!=").Nil()).Block(
-							jen.Return(jen.Err()),
-						),
-					}...)
-				}
+				body = append(body, []jen.Code{
+					ifJen.Block(
+						generateDecodeField(field, fieldInfo)...,
+					),
+				}...)
 			} else {
-				switch fieldInfo.TypeName {
-				case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8", "bool":
-					body = append(body, []jen.Code{
-						jen.For(jen.Id("k").Op(":=").Range().Id("p").Dot(field)).Block(
-							jen.Var().Id("tempValue").Id(fieldInfo.TypeName),
-							jen.If(jen.Err().Op("=").Qual("encoding/binary", "Read").Call(jen.Id("reader"), jen.Id("endian"), jen.Op("&").Id("tempValue")),
-								jen.Err().Op("!=").Nil()).Block(
-								jen.Return(jen.Err()),
-							),
-							jen.Id("p").Dot(field).Index(jen.Id("k")).Op("=").Id("tempValue"),
-						),
-					}...)
-				case "byte":
-					body = append(body, []jen.Code{
-						jen.Id("p").Dot(field).Op(",").Id("err").Op("=").Qual("github.com/Nyarum/diho_bytes_generate/utils", "ReadBytes").Call(jen.Id("reader")),
-						jen.If(jen.Err().Op("!=").Nil()).Block(
-							jen.Return(jen.Err()),
-						),
-					}...)
-				default:
-					body = append(body, []jen.Code{
-						jen.For(jen.Id("k").Op(":=").Range().Id("p").Dot(field)).Block(
-							jen.If(jen.Err().Op("=").Parens(jen.Op("&").Id("p").Dot(field).Index(jen.Id("k"))).Dot("Decode").Call(jen.Id("ctx"), jen.Id("reader"), jen.Id("endian")),
-								jen.Err().Op("!=").Nil()).Block(
-								jen.Return(jen.Err()),
-							),
-						),
-					}...)
-				}
+				body = append(body, generateDecodeField(field, fieldInfo)...)
 			}
 
 			if packetDescr.IsFilterMethod {
