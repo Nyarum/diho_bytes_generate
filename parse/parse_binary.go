@@ -85,14 +85,10 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 				for _, field := range v.Fields.List {
 					var isLittle bool
 					if field.Tag != nil {
-						fmt.Println(field.Tag.Value)
-
 						tags := utils.ParseStructTag(field.Tag.Value)
 						if err != nil {
 							fmt.Println("can't parse field tag", err)
 						}
-
-						fmt.Println("tags", tags)
 
 						for tag, options := range tags {
 							if tag != "dbg" {

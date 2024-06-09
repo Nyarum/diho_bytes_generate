@@ -9,6 +9,20 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
+func isTypesHasDefaultTypes(packetDescr customtypes.PacketDescr, keys []string) bool {
+	var isOK bool
+	for _, v := range keys {
+		fieldInfo, _ := packetDescr.FieldsWithTypes.Get(v)
+
+		switch fieldInfo.TypeName {
+		case "uint16", "uint32", "uint64", "uint8", "int16", "int32", "int64", "int8", "bool", "string", "byte":
+			isOK = true
+		}
+	}
+
+	return isOK
+}
+
 func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.PacketDescr) {
 	f := jen.NewFilePathName("", pkg)
 
@@ -18,7 +32,10 @@ func GenerateEncodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 		body := []jen.Code{
 			jen.Id("newBuf").Op(":=").Qual("github.com/valyala/bytebufferpool", "Get").Call(),
 			jen.Defer().Qual("github.com/valyala/bytebufferpool", "Put").Call(jen.Id("newBuf")),
-			jen.Var().Id("err").Error(),
+		}
+
+		if isTypesHasDefaultTypes(packetDescr, packetDescr.FieldsWithTypes.Keys()) {
+			body = append(body, jen.Var().Id("err").Error())
 		}
 
 		for _, field := range packetDescr.FieldsWithTypes.Keys() {
