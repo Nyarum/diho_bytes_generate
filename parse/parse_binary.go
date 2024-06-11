@@ -86,7 +86,7 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 					var isLittle bool
 
 					fieldCompose := customtypes.Field{
-						CompositeIf: make(map[string]string),
+						CompositeIf: make(map[string]customtypes.CompositeIf),
 					}
 
 					if field.Tag != nil {
@@ -109,12 +109,26 @@ func ParseBinaryFile(filename string) (pkgName string, packetsDescrs []customtyp
 									isLittle = true
 								}
 
-								if strings.Contains(option, "=") {
-									optionParts := strings.Split(option, "=")
+								if strings.Contains(option, "==") {
+									optionParts := strings.Split(option, "==")
 									fieldName := optionParts[0]
 									fieldValue := optionParts[1]
 
-									fieldCompose.CompositeIf[fieldName] = fieldValue
+									fieldCompose.CompositeIf[fieldName] = customtypes.CompositeIf{
+										Field: fieldValue,
+										Eq:    "==",
+									}
+								}
+
+								if strings.Contains(option, "!=") {
+									optionParts := strings.Split(option, "!=")
+									fieldName := optionParts[0]
+									fieldValue := optionParts[1]
+
+									fieldCompose.CompositeIf[fieldName] = customtypes.CompositeIf{
+										Field: fieldValue,
+										Eq:    "!=",
+									}
 								}
 							}
 						}

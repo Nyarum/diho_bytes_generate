@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -95,9 +96,9 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 				for fieldName, fieldValue := range fieldInfo.CompositeIf {
 					if i > 0 {
 						ifJen = ifJen.Op("&&")
-						ifJen.Id("p").Dot(fieldName).Op("==").Id(fieldValue)
+						ifJen.Id("p").Dot(fieldName).Op(fieldValue.Eq).Id(fieldValue.Field)
 					} else {
-						ifJen.If(jen.Id("p").Dot(fieldName).Op("==").Id(fieldValue))
+						ifJen.If(jen.Id("p").Dot(fieldName).Op(fieldValue.Eq).Id(fieldValue.Field))
 					}
 					i++
 				}
@@ -113,7 +114,9 @@ func GenerateDecodeForStruct(filename, pkg string, packetDescrs []customtypes.Pa
 
 			if packetDescr.IsFilterMethod {
 				body = append(body, []jen.Code{
-					jen.If(jen.Id("p").Dot("Filter").Call(jen.Id("ctx"))).Op("==").Id("true").Block(
+					jen.If(jen.Id("p").Dot("Filter").Call(
+						jen.Id("ctx"), jen.Id(fmt.Sprintf(`"%s"`, field)),
+					)).Op("==").Id("true").Block(
 						jen.Return(
 							jen.Err(),
 						),
